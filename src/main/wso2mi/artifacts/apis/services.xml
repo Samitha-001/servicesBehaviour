@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<api context="/services" name="services" xmlns="http://ws.apache.org/ns/synapse">
+<api context="/testServices" name="services" xmlns="http://ws.apache.org/ns/synapse">
     <resource methods="POST" uri-template="/password/temporary">
         <inSequence>
             <log category="INFO" level="full">
