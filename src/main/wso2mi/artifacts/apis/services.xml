@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/services" name="services" xmlns="http://ws.apache.org/ns/synapse">
+    <resource methods="POST" uri-template="/password/temporary">
+        <inSequence>
+            <log category="INFO" level="full">
+                <property name="INFO" value="*********Inside the API call**********"/>
+            </log>
+            <property expression="json-eval($.tempPassword)" name="smsMessage" scope="default" type="STRING"/>
+            <property expression="json-eval($.phoneNumber)" name="phoneNumber" scope="default" type="STRING"/>
+            <property expression="get-property('SYSTEM_TIME')" name="currentSystemTime" scope="default" type="STRING"/>
+            <sequence key="checkSeq"/>
+            <log level="simple">
+              <property name="smsMessage" expression="$ctx:smsMessage"/>
+              <property name="phoneNumber" expression="$ctx:phoneNumber"/>
+              <property name="sysTime" expression="$ctx:currentSystemTime"/>
+            </log>
+            <filter xpath="string-length($ctx:smsMessage) = 0 or string-length($ctx:phoneNumber) = 0">
+                <then>
+                    <property name="HTTP_SC" scope="axis2" type="STRING" value="400"/>
+                    <payloadFactory media-type="json">
+                        <format>
+                        {
+                            "status": {
+                                "code": 400,
+                                "message": "Missing required fields. 'tempPassword' and 'phoneNumber' are required.",
+                                "correlation-id": "$1",
+                                "timeStamp": "$2"
+                            }
+                        }
+                        </format>
+                        <args>
+                            <arg evaluator="xml" expression="$trp:correlation_id"/>
+                            <arg evaluator="xml" expression="$ctx:currentSystemTime"/>
+                        </args>
+                    </payloadFactory>
+                    <respond/>
+                </then>
+                <else/>
+            </filter>
+            <property expression="$ctx:authSID" name="uri.var.authSID" scope="default" type="STRING"/>
+            <log level="full">
+                <property name="AuthSID" value="******** Auth SID *******"/>
+                <property name="AuthSID" expression="$ctx:uri.var.authSID"/>
+            </log>
+            <property action="remove" name="REST_URL_POSTFIX" scope="axis2"/>
+            <payloadFactory media-type="xml">
+                <format>
+                    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+                        <soapenv:Body>
+                            <root>
+                                <To>$1</To>
+                                <From>$2</From>
+                                <Body>$3</Body>
+                            </root>
+                        </soapenv:Body>
+                    </soapenv:Envelope>
+                </format>
+                <args>
+                    <arg evaluator="xml" expression="$ctx:phoneNumber"/>
+                    <arg evaluator="xml" expression="$ctx:fromNumber"/>
+                    <arg evaluator="xml" expression="$ctx:smsMessage"/>
+                </args>
+            </payloadFactory>
+            <property name="messageType" scope="axis2" type="STRING" value="application/x-www-form-urlencoded"/>
+            <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            <header expression="fn:concat('Basic ', base64Encode(fn:concat($ctx:authSID, ':', $ctx:authToken)))" name="Authorization" scope="transport"/>
+            <call>
+                <endpoint key="TestEP"/>
+            </call>
+            
+            <filter regex="(200|201)" source="$axis2:HTTP_SC">
+                <then>
+                    <payloadFactory media-type="json">
+                        <format>
+                        {
+                            "status": {
+                                "code": 201,
+                                "message": "SMS sent successfully",
+                                "correlation-id": "$1",
+                                "timeStamp": "$2"
+                            }
+                        }
+                        </format>
+                        <args>
+                            <arg evaluator="xml" expression="$trp:correlation_id"/>
+                            <arg evaluator="xml" expression="$ctx:currentSystemTime"/>
+                        </args>
+                    </payloadFactory>
+                </then>
+                <else>
+                    <log category="ERROR" level="full">
+                        <property name="ERROR" value="Failed to send SMS"/>
+                        <property expression="$ctx:ERROR_MESSAGE" name="ERROR_MESSAGE"/>
+                    </log>
+                    <property name="HTTP_SC" scope="axis2" type="STRING" value="500"/>
+                    <payloadFactory media-type="json">
+                        <format>
+                        {
+                            "status": {
+                                "code": 500,
+                                "message": "Failed to send SMS",
+                                "correlation-id": "$1",
+                                "timeStamp": "$2"
+                            }
+                        }
+                        </format>
+                        <args>
+                            <arg evaluator="xml" expression="$trp:correlation_id"/>
+                            <arg evaluator="xml" expression="$ctx:currentSystemTime"/>
+                        </args>
+                    </payloadFactory>
+                </else>
+            </filter>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+        </faultSequence>
+    </resource>
+</api>

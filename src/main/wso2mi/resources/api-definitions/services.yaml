@@ -1,0 +1,23 @@
+openapi: 3.0.1
+info:
+  title: services
+  description: API Definition of services
+  version: 1.0.0
+servers:
+- url: http://localhost:8290/services
+paths:
+  /password/temporary:
+    post:
+      requestBody:
+        description: Sample Payload
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payload:
+                  type: object
+        required: false
+      responses:
+        default:
+          description: Default response
