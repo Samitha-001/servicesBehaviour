@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="checkSeq" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+        <log level="simple">
+                <property name="Check Sequence" value="******* Injected Sequence ********"/>
+            </log>
+            <property expression="json-eval($.authTestKey)" name="authSID" scope="default" type="STRING"/>
+            <log level="simple">
+                <property name="Check Sequence" value="******* EOF Sequence *******"/>
+        </log>
+</sequence>
